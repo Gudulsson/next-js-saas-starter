@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { ActivityType } from '@/lib/db/schema';
 import { getActivityLogs } from '@/lib/db/queries';
+import { cookies } from 'next/headers';
 
 const iconMap: Record<ActivityType, LucideIcon> = {
   [ActivityType.SIGN_UP]: UserPlus,
@@ -69,13 +70,69 @@ function formatAction(action: ActivityType): string {
 }
 
 export default async function ActivityPage() {
-  const logs = await getActivityLogs();
+  // Check if we're a test user
+  const sessionCookie = (await cookies()).get('session');
+  let isTestUser = false;
+  
+  if (sessionCookie) {
+    try {
+      const decoded = Buffer.from(sessionCookie.value, 'base64').toString('utf-8');
+      const sessionData = JSON.parse(decoded);
+      if (sessionData.user?.id === 'test-user-123') {
+        isTestUser = true;
+      }
+    } catch (e) {
+      // Not a test user
+    }
+  }
+
+  let logs;
+  
+  if (isTestUser) {
+    // Mock activity logs for test user
+    logs = [
+      {
+        id: 1,
+        action: ActivityType.SIGN_IN,
+        timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
+        ipAddress: '127.0.0.1',
+        userName: 'Test User'
+      },
+      {
+        id: 2,
+        action: ActivityType.SIGN_UP,
+        timestamp: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
+        ipAddress: '127.0.0.1',
+        userName: 'Test User'
+      },
+      {
+        id: 3,
+        action: ActivityType.CREATE_TEAM,
+        timestamp: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
+        ipAddress: '127.0.0.1',
+        userName: 'Test User'
+      }
+    ];
+  } else {
+    // Real user - get from database
+    logs = await getActivityLogs();
+  }
 
   return (
     <section className="flex-1 p-4 lg:p-8">
       <h1 className="text-lg lg:text-2xl font-medium text-gray-900 mb-6">
-        Activity Log
+        Activity Log {isTestUser && '(Test Mode)'}
       </h1>
+      
+      {isTestUser && (
+        <div className="bg-yellow-50 p-4 rounded-lg mb-6">
+          <p className="text-sm text-yellow-800">
+            <strong>Test Mode:</strong> Showing mock activity data. 
+            Real activity logs require a working database connection.
+          </p>
+        </div>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>

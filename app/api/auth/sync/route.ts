@@ -70,10 +70,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Auth sync error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return NextResponse.json(
-      { error: 'Failed to sync user data' },
+      { 
+        error: 'Failed to sync user data',
+        details: error.message 
+      },
       { status: 500 }
     );
   }

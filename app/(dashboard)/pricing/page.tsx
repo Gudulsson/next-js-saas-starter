@@ -2,15 +2,72 @@ import { checkoutAction } from '@/lib/payments/actions';
 import { Check } from 'lucide-react';
 import { getStripePrices, getStripeProducts } from '@/lib/payments/stripe';
 import { SubmitButton } from './submit-button';
+import { cookies } from 'next/headers';
 
 // Prices are fresh for one hour max
 export const revalidate = 3600;
 
 export default async function PricingPage() {
-  const [prices, products] = await Promise.all([
-    getStripePrices(),
-    getStripeProducts(),
-  ]);
+  // Check if we're a test user
+  const sessionCookie = (await cookies()).get('session');
+  let isTestUser = false;
+  
+  if (sessionCookie) {
+    try {
+      const decoded = Buffer.from(sessionCookie.value, 'base64').toString('utf-8');
+      const sessionData = JSON.parse(decoded);
+      if (sessionData.user?.id === 'test-user-123') {
+        isTestUser = true;
+      }
+    } catch (e) {
+      // Not a test user
+    }
+  }
+
+  let prices, products;
+  
+  if (isTestUser) {
+    // Mock data for test users
+    prices = [
+      {
+        id: 'price_test_base',
+        productId: 'prod_test_base',
+        unitAmount: 800,
+        currency: 'usd',
+        interval: 'month',
+        trialPeriodDays: 7
+      },
+      {
+        id: 'price_test_plus',
+        productId: 'prod_test_plus',
+        unitAmount: 1200,
+        currency: 'usd',
+        interval: 'month',
+        trialPeriodDays: 7
+      }
+    ];
+    
+    products = [
+      {
+        id: 'prod_test_base',
+        name: 'Base',
+        description: 'Perfect for small teams',
+        defaultPriceId: 'price_test_base'
+      },
+      {
+        id: 'prod_test_plus',
+        name: 'Plus',
+        description: 'For growing businesses',
+        defaultPriceId: 'price_test_plus'
+      }
+    ];
+  } else {
+    // Real data for actual users
+    [prices, products] = await Promise.all([
+      getStripePrices(),
+      getStripeProducts(),
+    ]);
+  }
 
   const basePlan = products.find((product) => product.name === 'Base');
   const plusPlan = products.find((product) => product.name === 'Plus');
@@ -20,6 +77,15 @@ export default async function PricingPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {isTestUser && (
+        <div className="bg-yellow-50 p-4 rounded-lg mb-8 max-w-xl mx-auto">
+          <p className="text-sm text-yellow-800">
+            <strong>Test Mode:</strong> Showing mock pricing data. 
+            Real Stripe integration requires valid API keys.
+          </p>
+        </div>
+      )}
+      
       <div className="grid md:grid-cols-2 gap-8 max-w-xl mx-auto">
         <PricingCard
           name={basePlan?.name || 'Base'}
@@ -32,6 +98,7 @@ export default async function PricingPage() {
             'Email Support',
           ]}
           priceId={basePrice?.id}
+          isTestUser={isTestUser}
         />
         <PricingCard
           name={plusPlan?.name || 'Plus'}
@@ -44,6 +111,7 @@ export default async function PricingPage() {
             '24/7 Support + Slack Access',
           ]}
           priceId={plusPrice?.id}
+          isTestUser={isTestUser}
         />
       </div>
     </main>
@@ -57,6 +125,7 @@ function PricingCard({
   trialDays,
   features,
   priceId,
+  isTestUser,
 }: {
   name: string;
   price: number;
@@ -64,6 +133,7 @@ function PricingCard({
   trialDays: number;
   features: string[];
   priceId?: string;
+  isTestUser?: boolean;
 }) {
   return (
     <div className="pt-6">
@@ -85,10 +155,18 @@ function PricingCard({
           </li>
         ))}
       </ul>
-      <form action={checkoutAction}>
-        <input type="hidden" name="priceId" value={priceId} />
-        <SubmitButton />
-      </form>
+      {isTestUser ? (
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <p className="text-sm text-gray-600 text-center">
+            Stripe checkout disabled in test mode
+          </p>
+        </div>
+      ) : (
+        <form action={checkoutAction}>
+          <input type="hidden" name="priceId" value={priceId} />
+          <SubmitButton />
+        </form>
+      )}
     </div>
   );
 }

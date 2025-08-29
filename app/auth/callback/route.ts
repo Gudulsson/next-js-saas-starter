@@ -14,8 +14,12 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   }
 });
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const reportId = parseInt(id);
   const code = searchParams.get('code');
   const redirectTo = searchParams.get('redirect') || '/dashboard';
   const inviteId = searchParams.get('inviteId');

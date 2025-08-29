@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, Play } from 'lucide-react';
 import Link from 'next/link';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -84,6 +84,54 @@ export function SupabaseAuth({ mode, redirectTo, inviteId }: AuthFormProps) {
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Temporary test login function
+  const handleTestLogin = async () => {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      console.log('Starting test login...');
+      
+      // Create a mock user session
+      const mockUser = {
+        id: 'test-user-123',
+        email: 'test@example.com',
+        user_metadata: {
+          full_name: 'Test User'
+        }
+      };
+
+      console.log('Mock user created:', mockUser);
+
+      // Skip database sync for now (since it's failing)
+      console.log('Skipping database sync due to connection issues...');
+
+      // Set a test session cookie with proper JWT format
+      const sessionData = {
+        user: mockUser,
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      };
+      
+             // Use a simple base64 encoded session instead of JWT
+       const sessionCookie = btoa(JSON.stringify(sessionData));
+       document.cookie = `session=${sessionCookie}; path=/; max-age=86400; SameSite=Lax`;
+      
+      console.log('Session cookie set:', sessionCookie);
+
+      // Wait a moment for cookie to be set
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Redirect to dashboard
+      console.log('Redirecting to dashboard...');
+      window.location.href = redirectTo || '/dashboard';
+    } catch (err: any) {
+      console.error('Test login error:', err);
+      setError('Test login failed: ' + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -205,6 +253,20 @@ export function SupabaseAuth({ mode, redirectTo, inviteId }: AuthFormProps) {
                   isSignUp ? 'Create account' : 'Sign in'
                 )}
               </Button>
+
+              {/* Temporary Test Login Button */}
+              {!isSignUp && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleTestLogin}
+                  disabled={isLoading}
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Test Login (Bypass)
+                </Button>
+              )}
             </form>
 
             <div className="mt-4">

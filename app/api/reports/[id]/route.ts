@@ -6,7 +6,7 @@ import { eq, and } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUser();
@@ -14,7 +14,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const reportId = parseInt(params.id);
+    const { id } = await params;
+    const reportId = parseInt(id);
     if (isNaN(reportId)) {
       return NextResponse.json({ error: 'Invalid report ID' }, { status: 400 });
     }
