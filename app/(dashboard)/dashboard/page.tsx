@@ -18,7 +18,9 @@ import { Suspense } from 'react';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle, FileText } from 'lucide-react';
+import { UrlForm } from '@/components/UrlForm';
+import Link from 'next/link';
 
 type ActionState = {
   error?: string;
@@ -100,21 +102,8 @@ function TeamMembers() {
     FormData
   >(removeTeamMember, {});
 
-  const getUserDisplayName = (user: Pick<User, 'id' | 'name' | 'email'>) => {
-    return user.name || user.email || 'Unknown User';
-  };
-
-  if (!teamData?.teamMembers?.length) {
-    return (
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Team Members</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">No team members yet.</p>
-        </CardContent>
-      </Card>
-    );
+  if (!teamData) {
+    return <TeamMembersSkeleton />;
   }
 
   return (
@@ -123,55 +112,59 @@ function TeamMembers() {
         <CardTitle>Team Members</CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-4">
-          {teamData.teamMembers.map((member, index) => (
-            <li key={member.id} className="flex items-center justify-between">
+        <div className="space-y-4">
+          {teamData.teamMembers.map((member) => (
+            <div
+              key={member.id}
+              className="flex items-center justify-between"
+            >
               <div className="flex items-center space-x-4">
                 <Avatar>
-                  {/* 
-                    This app doesn't save profile images, but here
-                    is how you'd show them:
-
-                    <AvatarImage
-                      src={member.user.image || ''}
-                      alt={getUserDisplayName(member.user)}
-                    />
-                  */}
+                  <AvatarImage src="" />
                   <AvatarFallback>
-                    {getUserDisplayName(member.user)
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')}
+                    {member.user.name
+                      ? member.user.name.charAt(0).toUpperCase()
+                      : member.user.email.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="font-medium">
-                    {getUserDisplayName(member.user)}
+                    {member.user.name || member.user.email}
                   </p>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {member.role}
+                  <p className="text-sm text-muted-foreground">
+                    {member.user.email}
                   </p>
                 </div>
               </div>
-              {index > 1 ? (
-                <form action={removeAction}>
-                  <input type="hidden" name="memberId" value={member.id} />
-                  <Button
-                    type="submit"
-                    variant="outline"
-                    size="sm"
-                    disabled={isRemovePending}
-                  >
-                    {isRemovePending ? 'Removing...' : 'Remove'}
-                  </Button>
-                </form>
-              ) : null}
-            </li>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground capitalize">
+                  {member.role}
+                </span>
+                {member.role !== 'owner' && (
+                  <form action={removeAction}>
+                    <input
+                      type="hidden"
+                      name="userId"
+                      value={member.user.id}
+                    />
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      disabled={isRemovePending}
+                    >
+                      {isRemovePending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Remove'
+                      )}
+                    </Button>
+                  </form>
+                )}
+              </div>
+            </div>
           ))}
-        </ul>
-        {removeState?.error && (
-          <p className="text-red-500 mt-4">{removeState.error}</p>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -179,7 +172,7 @@ function TeamMembers() {
 
 function InviteTeamMemberSkeleton() {
   return (
-    <Card className="h-[260px]">
+    <Card className="mb-8 h-[140px]">
       <CardHeader>
         <CardTitle>Invite Team Member</CardTitle>
       </CardHeader>
@@ -196,7 +189,7 @@ function InviteTeamMember() {
   >(inviteTeamMember, {});
 
   return (
-    <Card>
+    <Card className="mb-8">
       <CardHeader>
         <CardTitle>Invite Team Member</CardTitle>
       </CardHeader>
@@ -258,27 +251,67 @@ function InviteTeamMember() {
           </Button>
         </form>
       </CardContent>
-      {!isOwner && (
-        <CardFooter>
-          <p className="text-sm text-muted-foreground">
-            You must be a team owner to invite new members.
-          </p>
-        </CardFooter>
-      )}
     </Card>
   );
 }
 
-export default function SettingsPage() {
+function QuickActions() {
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle>Quick Actions</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Link href="/reports">
+            <Button variant="outline" className="w-full h-16">
+              <FileText className="mr-2 h-5 w-5" />
+              View Reports
+            </Button>
+          </Link>
+          <Link href="/pricing">
+            <Button variant="outline" className="w-full h-16">
+              <PlusCircle className="mr-2 h-5 w-5" />
+              Upgrade Plan
+            </Button>
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function DashboardPage() {
   return (
     <section className="flex-1 p-4 lg:p-8">
-      <h1 className="text-lg lg:text-2xl font-medium mb-6">Team Settings</h1>
+      <h1 className="text-lg lg:text-2xl font-medium text-gray-900 mb-6">
+        Dashboard
+      </h1>
+
+      {/* Quick Actions */}
+      <QuickActions />
+
+      {/* Website Analysis */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Website Analysis</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <UrlForm />
+        </CardContent>
+      </Card>
+
+      {/* Subscription Management */}
       <Suspense fallback={<SubscriptionSkeleton />}>
         <ManageSubscription />
       </Suspense>
+
+      {/* Team Members */}
       <Suspense fallback={<TeamMembersSkeleton />}>
         <TeamMembers />
       </Suspense>
+
+      {/* Invite Team Member */}
       <Suspense fallback={<InviteTeamMemberSkeleton />}>
         <InviteTeamMember />
       </Suspense>
