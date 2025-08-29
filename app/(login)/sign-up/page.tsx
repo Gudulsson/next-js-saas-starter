@@ -1,10 +1,20 @@
 import { Suspense } from 'react';
-import { Login } from '../login';
+import { SupabaseAuth } from '@/components/auth/SupabaseAuth';
 
-export default function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string; inviteId?: string; error?: string }>;
+}) {
+  const params = await searchParams;
+  
   return (
     <Suspense>
-      <Login mode="signup" />
+      <SupabaseAuth 
+        mode="signup" 
+        redirectTo={params.redirect}
+        inviteId={params.inviteId}
+      />
     </Suspense>
   );
 }

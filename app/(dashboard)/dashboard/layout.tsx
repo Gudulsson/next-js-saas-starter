@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Users, Settings, Shield, Activity, Menu, FileText } from 'lucide-react';
+import { UserProfile } from '@/components/auth/UserProfile';
 
 export default function DashboardLayout({
   children
@@ -29,14 +30,17 @@ export default function DashboardLayout({
         <div className="flex items-center">
           <span className="font-medium">Dashboard</span>
         </div>
-        <Button
-          className="-mr-3"
-          variant="ghost"
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        >
-          <Menu className="h-6 w-6" />
-          <span className="sr-only">Toggle sidebar</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <UserProfile />
+          <Button
+            className="-mr-3"
+            variant="ghost"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">Toggle sidebar</span>
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden h-full">
@@ -64,6 +68,11 @@ export default function DashboardLayout({
               </Link>
             ))}
           </nav>
+          
+          {/* User profile in sidebar */}
+          <div className="p-4 border-t border-gray-200">
+            <UserProfile />
+          </div>
         </aside>
 
         {/* Main content */}
